@@ -63,6 +63,10 @@ function sendMessage() {
     sender: window.myCode,
     text: message,
     timestamp: Date.now()
+  }).then(() => {
+    console.log("Message sent:", message); // Log message sent
+  }).catch((error) => {
+    console.error("Message sending error:", error); // Log errors if any
   });
 
   document.getElementById("messageInput").value = ""; // Clear input after sending
@@ -75,6 +79,8 @@ function listenForMessages() {
 
   messagesRef.on("child_added", (snapshot) => {
     const data = snapshot.val();
+    console.log("Message received:", data); // Log message received
+
     const messagesDiv = document.getElementById("messages");
     const msg = document.createElement("p");
     msg.innerHTML = `<strong>${data.sender}:</strong> ${data.text}`;
