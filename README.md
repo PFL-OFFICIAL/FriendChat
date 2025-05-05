@@ -1,1 +1,1 @@
-# FriendChat
+# Chat
