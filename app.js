@@ -1,4 +1,4 @@
-// Firebase config
+// Initialize Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAeyCIOQl9Nv8uyrNKi68Dp9AgAP7wiNLY",
   authDomain: "chat-62140.firebaseapp.com",
@@ -10,154 +10,99 @@ const firebaseConfig = {
   measurementId: "G-T08BLT65Q1"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const auth = firebase.auth();
 
-// Global Variables
 let currentUser = null;
-let chatroomId = null;
 
-// Login function using Google
-function login() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider)
-    .then((result) => {
+// Function to generate a unique friend code
+function generateFriendCode() {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
+// Ensure the DOM is fully loaded before executing
+document.addEventListener("DOMContentLoaded", function () {
+
+  const myCodeElement = document.getElementById("myCode");
+  const friendCodeInput = document.getElementById("friendCodeInput");
+  const messageInput = document.getElementById("messageInput");
+  const messagesDiv = document.getElementById("messages");
+  const chatBox = document.getElementById("chatBox");
+
+  // Check if the element exists before updating its text
+  if (myCodeElement) {
+    const code = generateFriendCode();
+    myCodeElement.innerText = code;
+  }
+
+  // Handle user sign-in with Google
+  document.getElementById("loginButton").addEventListener("click", function() {
+    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
       currentUser = result.user;
+      console.log("Logged in as:", currentUser.displayName);
       document.getElementById("loginSection").classList.add("hidden");
       document.getElementById("friendSection").classList.remove("hidden");
-      loadUserFriends();
-    })
-    .catch((error) => {
-      console.error("Login error:", error);
-      alert("Error logging in: " + error.message);
+    }).catch(function(error) {
+      console.error("Error signing in:", error);
     });
-}
+  });
 
-// Load user's friends from Firebase
-function loadUserFriends() {
-  firebase.database().ref("users/" + currentUser.uid + "/friends").once("value")
-    .then((snapshot) => {
-      const friends = snapshot.val() || [];
-      console.log("Friends:", friends);
-    });
-}
+  // Set a friend's code in the database
+  document.getElementById("generateCodeButton").addEventListener("click", function() {
+    if (currentUser) {
+      const code = generateFriendCode();
+      database.ref('friends/' + currentUser.uid).set({
+        friendCode: code
+      });
+      myCodeElement.innerText = code;
+    }
+  });
 
-// Add a friend
-function addFriend() {
-  const friendEmail = document.getElementById("friendEmail").value.trim();
-  if (!friendEmail) {
-    alert("Please enter a valid email.");
-    return;
-  }
+  // Handle joining a chat
+  document.getElementById("joinChatButton").addEventListener("click", function() {
+    const enteredCode = friendCodeInput.value.trim();
+    if (!enteredCode) return alert("Please enter a valid friend code.");
 
-  // Find the user by email in Firebase (this assumes email is unique)
-  firebase.database().ref("users").orderByChild("email").equalTo(friendEmail).once("value")
-    .then((snapshot) => {
-      const users = snapshot.val();
-      if (users) {
-        const friendUid = Object.keys(users)[0]; // Get the UID of the friend
-        addFriendToUser(friendUid);
+    const chatRoomRef = database.ref("chatrooms/" + enteredCode);
+    chatRoomRef.once("value").then(function(snapshot) {
+      if (snapshot.exists()) {
+        // Check if the current user is friends with someone in the chatroom
+        if (snapshot.val().friends.includes(currentUser.uid)) {
+          chatBox.classList.remove("hidden");
+          messagesDiv.innerHTML = ''; // Clear messages
+        } else {
+          alert("You can only join if your friend is in the chat.");
+        }
       } else {
-        alert("Friend not found.");
+        alert("Invalid chat room code.");
       }
-    })
-    .catch((error) => {
-      console.error("Error finding friend:", error);
-      alert("Error finding friend.");
     });
-}
-
-// Add a friend to the current user
-function addFriendToUser(friendUid) {
-  const userRef = firebase.database().ref("users/" + currentUser.uid + "/friends");
-  userRef.push(friendUid).then(() => {
-    alert("Friend added successfully.");
-  }).catch((error) => {
-    console.error("Error adding friend:", error);
-    alert("Error adding friend.");
   });
-}
 
-// Create a chat room
-function createChat() {
-  const code = "CHAT-" + Date.now() + Math.floor(Math.random() * 1000);
-  document.getElementById("chatCode").innerText = code;
-  chatroomId = code;
+  // Handle sending messages
+  document.getElementById("sendMessageButton").addEventListener("click", function() {
+    const message = messageInput.value.trim();
+    if (!message) return;
 
-  firebase.database().ref("rooms/" + chatroomId).set({
-    createdBy: currentUser.uid,
-    friends: [currentUser.uid], // Store the creator's UID as a friend
-    messages: []
-  }).then(() => {
-    console.log("Chat room created with code:", chatroomId);
-    document.getElementById("chatSection").classList.add("hidden");
-    document.getElementById("chatBox").classList.remove("hidden");
-    listenForMessages();
-  }).catch((error) => {
-    console.error("Error creating chat room:", error);
+    const messageData = {
+      sender: currentUser.displayName,
+      message: message,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Assuming chat room code is available
+    const chatRoomRef = database.ref("chatrooms/" + friendCodeInput.value);
+    chatRoomRef.push(messageData);
+    messageInput.value = ''; // Clear input after sending
   });
-}
 
-// Join a chat room
-function joinChat() {
-  const roomCode = document.getElementById("chatRoomCode").value.trim();
-  if (!roomCode) {
-    alert("Please enter a valid chat room code.");
-    return;
-  }
-
-  firebase.database().ref("rooms/" + roomCode).once("value")
-    .then((snapshot) => {
-      const roomData = snapshot.val();
-      if (!roomData) {
-        alert("Chat room not found.");
-        return;
-      }
-
-      // Check if the current user is friends with someone in the chat room
-      if (roomData.friends.includes(currentUser.uid)) {
-        chatroomId = roomCode;
-        document.getElementById("chatBox").classList.remove("hidden");
-        listenForMessages();
-      } else {
-        alert("You can only join chat rooms with your friends.");
-      }
-    })
-    .catch((error) => {
-      console.error("Error joining chat room:", error);
-      alert("Error joining chat room.");
-    });
-}
-
-// Send a message to the chat room
-function sendMessage() {
-  const message = document.getElementById("messageInput").value.trim();
-  if (!message) return;
-
-  const messageRef = firebase.database().ref("rooms/" + chatroomId + "/messages").push();
-  messageRef.set({
-    sender: currentUser.uid,
-    text: message,
-    timestamp: Date.now()
-  }).then(() => {
-    console.log("Message sent:", message);
-    document.getElementById("messageInput").value = ""; // Clear input after sending
-  }).catch((error) => {
-    console.error("Message sending error:", error);
+  // Listen for new messages in the chatroom
+  const chatRoomRef = database.ref("chatrooms/");
+  chatRoomRef.on("child_added", function(snapshot) {
+    const messageData = snapshot.val();
+    const messageElement = document.createElement("p");
+    messageElement.innerText = `${messageData.sender}: ${messageData.message}`;
+    messagesDiv.appendChild(messageElement);
   });
-}
-
-// Listen for new messages in the chat room
-function listenForMessages() {
-  const messagesRef = firebase.database().ref("rooms/" + chatroomId + "/messages");
-  messagesRef.off(); // Clear previous listeners
-
-  messagesRef.on("child_added", (snapshot) => {
-    const data = snapshot.val();
-    const messagesDiv = document.getElementById("messages");
-    const msg = document.createElement("p");
-    msg.innerHTML = `<strong>${data.sender}:</strong> ${data.text}`;
-    messagesDiv.appendChild(msg);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
-  });
-}
+});
