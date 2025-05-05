@@ -17,18 +17,26 @@ let chatroomId = null;
 
 // Wait for DOM to load before running auth and UI setup
 window.addEventListener("load", () => {
-  // Sign in anonymously and display friend code
-  firebase.auth().signInAnonymously()
-    .then(() => {
-      let myCode = firebase.auth().currentUser.uid;
-      document.getElementById("myCode").innerText = myCode;
-      window.myCode = myCode; // Expose it globally
-    })
-    .catch((error) => {
-      console.error("Auth error:", error);
-      alert("Failed to authenticate: " + error.message);
-    });
+  // Check if a friend code already exists in local storage
+  let storedCode = localStorage.getItem("friendCode");
+
+  if (storedCode) {
+    document.getElementById("myCode").innerText = storedCode;
+    window.myCode = storedCode; // Use stored code if available
+  } else {
+    // Generate a new unique friend code if not present in local storage
+    const newCode = generateUniqueCode();
+    localStorage.setItem("friendCode", newCode);
+    document.getElementById("myCode").innerText = newCode;
+    window.myCode = newCode; // Store the new code globally
+  }
 });
+
+// Function to generate a unique friend code (for the user)
+function generateUniqueCode() {
+  // Use the current timestamp to ensure it's unique each time
+  return "FC-" + Date.now() + Math.floor(Math.random() * 1000);
+}
 
 // Join a chat room with a friend's code
 function joinChat() {
