@@ -1,4 +1,4 @@
-// 🔥 Your Firebase config
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAeyCIOQl9Nv8uyrNKi68Dp9AgAP7wiNLY",
   authDomain: "chat-62140.firebaseapp.com",
@@ -14,28 +14,49 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 let chatroomId = null;
+let userName = null; // To store the user's display name
 
 // Wait for DOM to load before running auth and UI setup
 window.addEventListener("load", () => {
-  // Check if a friend code already exists in local storage
-  let storedCode = localStorage.getItem("friendCode");
-
-  if (storedCode) {
-    document.getElementById("myCode").innerText = storedCode;
-    window.myCode = storedCode; // Use stored code if available
-  } else {
-    // Generate a new unique friend code if not present in local storage
-    const newCode = generateUniqueCode();
-    localStorage.setItem("friendCode", newCode);
-    document.getElementById("myCode").innerText = newCode;
-    window.myCode = newCode; // Store the new code globally
-  }
+  // Sign in anonymously when page loads
+  firebase.auth().signInAnonymously()
+    .then(() => {
+      let myCode = firebase.auth().currentUser.uid;
+      document.getElementById("myCode").innerText = myCode;
+      window.myCode = myCode; // Store in global variable
+    })
+    .catch((error) => {
+      console.error("Auth error:", error);
+      alert("Failed to authenticate: " + error.message);
+    });
 });
 
-// Function to generate a unique friend code (for the user)
-function generateUniqueCode() {
-  // Use the current timestamp to ensure it's unique each time
-  return "FC-" + Date.now() + Math.floor(Math.random() * 1000);
+// Set the user's display name
+function setUserName() {
+  userName = document.getElementById("userName").value.trim();
+  if (userName === "") {
+    alert("Please enter a valid name.");
+    return;
+  }
+  
+  const user = firebase.auth().currentUser;
+  user.updateProfile({
+    displayName: userName
+  }).then(() => {
+    alert("Name set successfully!");
+    document.getElementById("nameBox").style.display = "none"; // Hide name input
+    document.getElementById("friendCodeInput").style.display = "inline"; // Show code input
+  }).catch((error) => {
+    console.error("Error setting display name:", error);
+    alert("Error setting display name.");
+  });
+}
+
+// Generate a unique friend code
+function generateCode() {
+  const newCode = "FC-" + Date.now() + Math.floor(Math.random() * 1000);
+  document.getElementById("myCode").innerText = newCode;
+  window.myCode = newCode; // Store the generated code in global variable
 }
 
 // Join a chat room with a friend's code
@@ -43,6 +64,11 @@ function joinChat() {
   const friendCode = document.getElementById("friendCodeInput").value.trim();
   if (!friendCode) {
     alert("Please enter a friend's code.");
+    return;
+  }
+
+  if (!userName) {
+    alert("Please set your name first.");
     return;
   }
 
@@ -68,7 +94,7 @@ function sendMessage() {
   // Push the message into Firebase Realtime Database
   const messageRef = firebase.database().ref("rooms/" + chatroomId + "/messages").push();
   messageRef.set({
-    sender: window.myCode,
+    sender: userName, // Use display name instead of code
     text: message,
     timestamp: Date.now()
   }).then(() => {
