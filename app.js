@@ -38,7 +38,7 @@ function setUserName() {
     alert("Please enter a valid name.");
     return;
   }
-  
+
   const user = firebase.auth().currentUser;
   user.updateProfile({
     displayName: userName
@@ -46,6 +46,7 @@ function setUserName() {
     alert("Name set successfully!");
     document.getElementById("nameBox").style.display = "none"; // Hide name input
     document.getElementById("friendCodeInput").style.display = "inline"; // Show code input
+    document.querySelector('.join-box').style.display = 'inline'; // Show the join chat box
   }).catch((error) => {
     console.error("Error setting display name:", error);
     alert("Error setting display name.");
