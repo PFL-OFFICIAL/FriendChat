@@ -12,7 +12,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-let myCode = localStorage.getItem("friendCode") || generateCode();
+let myCode = generateCode();
 document.getElementById("myCode").innerText = myCode;
 
 let chatroomId = null;
