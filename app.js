@@ -1,4 +1,4 @@
-// 🔥 Your actual Firebase config
+// 🔥 Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAeyCIOQl9Nv8uyrNKi68Dp9AgAP7wiNLY",
   authDomain: "chat-62140.firebaseapp.com",
@@ -13,21 +13,24 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Enable Anonymous Authentication
-firebase.auth().signInAnonymously()
-  .then(() => {
-    let myCode = firebase.auth().currentUser.uid;
-    document.getElementById("myCode").innerText = myCode;
-
-    // Expose friend code globally so other functions can use it
-    window.myCode = myCode;
-  })
-  .catch((error) => {
-    console.error("Auth error:", error);
-  });
-
 let chatroomId = null;
 
+// Wait for DOM to load before running auth and UI setup
+window.addEventListener("load", () => {
+  // Sign in anonymously and display friend code
+  firebase.auth().signInAnonymously()
+    .then(() => {
+      let myCode = firebase.auth().currentUser.uid;
+      document.getElementById("myCode").innerText = myCode;
+      window.myCode = myCode; // Expose it globally
+    })
+    .catch((error) => {
+      console.error("Auth error:", error);
+      alert("Failed to authenticate: " + error.message);
+    });
+});
+
+// Join a chat room with a friend's code
 function joinChat() {
   const friendCode = document.getElementById("friendCodeInput").value.trim();
   if (!friendCode) {
@@ -40,13 +43,13 @@ function joinChat() {
     return;
   }
 
-  // Generate a consistent room ID by sorting the two codes alphabetically
   const sorted = [window.myCode, friendCode].sort();
   chatroomId = sorted.join("-");
   document.getElementById("chatBox").classList.remove("hidden");
   listenForMessages();
 }
 
+// Send a message to the current chatroom
 function sendMessage() {
   const message = document.getElementById("messageInput").value.trim();
   if (!message) return;
@@ -61,9 +64,10 @@ function sendMessage() {
   document.getElementById("messageInput").value = "";
 }
 
+// Listen for new messages in the current chatroom
 function listenForMessages() {
   const messagesRef = firebase.database().ref("rooms/" + chatroomId + "/messages");
-  messagesRef.off(); // Clear old listeners
+  messagesRef.off(); // Clear previous listeners in case we switch rooms
 
   messagesRef.on("child_added", (snapshot) => {
     const data = snapshot.val();
