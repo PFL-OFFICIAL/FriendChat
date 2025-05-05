@@ -45,7 +45,6 @@ function setUserName() {
   }).then(() => {
     alert("Name set successfully!");
     document.getElementById("nameBox").style.display = "none"; // Hide name input
-    document.getElementById("friendCodeInput").style.display = "inline"; // Show code input
     document.querySelector('.join-box').style.display = 'inline'; // Show the join chat box
   }).catch((error) => {
     console.error("Error setting display name:", error);
