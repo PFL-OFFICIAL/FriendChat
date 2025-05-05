@@ -1,12 +1,13 @@
 // 🔥 YOUR FIREBASE CONFIG HERE
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_DOMAIN",
-  databaseURL: "YOUR_DATABASE_URL",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MSG_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAeyCIOQl9Nv8uyrNKi68Dp9AgAP7wiNLY",
+  authDomain: "chat-62140.firebaseapp.com",
+  databaseURL: "https://chat-62140-default-rtdb.firebaseio.com",
+  projectId: "chat-62140",
+  storageBucket: "chat-62140.firebasestorage.app",
+  messagingSenderId: "144017387388",
+  appId: "1:144017387388:web:0f1eabe0d328bdb8447ef9",
+  measurementId: "G-T08BLT65Q1"
 };
 
 firebase.initializeApp(firebaseConfig);
