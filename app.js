@@ -1,4 +1,4 @@
-// 🔥 YOUR FIREBASE CONFIG HERE
+// 🔥 Your actual Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAeyCIOQl9Nv8uyrNKi68Dp9AgAP7wiNLY",
   authDomain: "chat-62140.firebaseapp.com",
@@ -10,40 +10,50 @@ const firebaseConfig = {
   measurementId: "G-T08BLT65Q1"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-let myCode = generateCode();
-document.getElementById("myCode").innerText = myCode;
+// Enable Anonymous Authentication
+firebase.auth().signInAnonymously()
+  .then(() => {
+    let myCode = firebase.auth().currentUser.uid;
+    document.getElementById("myCode").innerText = myCode;
+
+    // Expose friend code globally so other functions can use it
+    window.myCode = myCode;
+  })
+  .catch((error) => {
+    console.error("Auth error:", error);
+  });
 
 let chatroomId = null;
 
-function generateCode() {
-  const code = Math.random().toString(36).substr(2, 8).toUpperCase();
-  localStorage.setItem("friendCode", code);
-  document.getElementById("myCode").innerText = code;
-  return code;
-}
-
 function joinChat() {
-  const friendCode = document.getElementById("friendCodeInput").value.toUpperCase();
+  const friendCode = document.getElementById("friendCodeInput").value.trim();
   if (!friendCode) {
     alert("Please enter a friend's code.");
     return;
   }
 
-  const sorted = [myCode, friendCode].sort();
+  if (!window.myCode) {
+    alert("Wait for your friend code to load.");
+    return;
+  }
+
+  // Generate a consistent room ID by sorting the two codes alphabetically
+  const sorted = [window.myCode, friendCode].sort();
   chatroomId = sorted.join("-");
   document.getElementById("chatBox").classList.remove("hidden");
   listenForMessages();
 }
 
 function sendMessage() {
-  const message = document.getElementById("messageInput").value;
-  if (!message.trim()) return;
+  const message = document.getElementById("messageInput").value.trim();
+  if (!message) return;
 
   const messageRef = firebase.database().ref("rooms/" + chatroomId + "/messages").push();
   messageRef.set({
-    sender: myCode,
+    sender: window.myCode,
     text: message,
     timestamp: Date.now()
   });
