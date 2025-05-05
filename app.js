@@ -10,7 +10,6 @@ const firebaseConfig = {
   measurementId: "G-T08BLT65Q1"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const auth = firebase.auth();
@@ -22,7 +21,7 @@ function generateFriendCode() {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
-// Ensure the DOM is fully loaded before executing
+// Ensure DOM is fully loaded before execution
 document.addEventListener("DOMContentLoaded", function () {
 
   const myCodeElement = document.getElementById("myCode");
@@ -31,7 +30,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const messagesDiv = document.getElementById("messages");
   const chatBox = document.getElementById("chatBox");
 
-  // Check if the element exists before updating its text
   if (myCodeElement) {
     const code = generateFriendCode();
     myCodeElement.innerText = code;
@@ -39,18 +37,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Handle user sign-in with Google
   document.getElementById("loginButton").addEventListener("click", function() {
-    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
-      currentUser = result.user;
-      console.log("Logged in as:", currentUser.displayName);
-      document.getElementById("loginSection").classList.add("hidden");
-      document.getElementById("friendSection").classList.remove("hidden");
-    }).catch(function(error) {
-      console.error("Error signing in:", error);
-    });
+    console.log("Login button clicked!"); // Debugging line
+    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+      .then(function(result) {
+        console.log("Logged in as:", result.user.displayName);
+        currentUser = result.user;
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("friendSection").classList.remove("hidden");
+      }).catch(function(error) {
+        console.error("Error signing in:", error);
+      });
   });
 
   // Set a friend's code in the database
   document.getElementById("generateCodeButton").addEventListener("click", function() {
+    console.log("Generate code button clicked!"); // Debugging line
     if (currentUser) {
       const code = generateFriendCode();
       database.ref('friends/' + currentUser.uid).set({
@@ -62,13 +63,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Handle joining a chat
   document.getElementById("joinChatButton").addEventListener("click", function() {
+    console.log("Join chat button clicked!"); // Debugging line
     const enteredCode = friendCodeInput.value.trim();
     if (!enteredCode) return alert("Please enter a valid friend code.");
 
     const chatRoomRef = database.ref("chatrooms/" + enteredCode);
     chatRoomRef.once("value").then(function(snapshot) {
       if (snapshot.exists()) {
-        // Check if the current user is friends with someone in the chatroom
         if (snapshot.val().friends.includes(currentUser.uid)) {
           chatBox.classList.remove("hidden");
           messagesDiv.innerHTML = ''; // Clear messages
@@ -83,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Handle sending messages
   document.getElementById("sendMessageButton").addEventListener("click", function() {
+    console.log("Send message button clicked!"); // Debugging line
     const message = messageInput.value.trim();
     if (!message) return;
 
@@ -92,7 +94,6 @@ document.addEventListener("DOMContentLoaded", function () {
       timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
-    // Assuming chat room code is available
     const chatRoomRef = database.ref("chatrooms/" + friendCodeInput.value);
     chatRoomRef.push(messageData);
     messageInput.value = ''; // Clear input after sending
