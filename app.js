@@ -43,10 +43,13 @@ function joinChat() {
     return;
   }
 
-  const sorted = [window.myCode, friendCode].sort();
+  // Generate the chatroom ID uniquely by sorting the two friend codes
+  const sorted = [window.myCode, friendCode].sort(); // Sort the codes to ensure consistent ordering
   chatroomId = sorted.join("-");
+
+  // Display chat interface
   document.getElementById("chatBox").classList.remove("hidden");
-  listenForMessages();
+  listenForMessages(); // Start listening for messages in the chatroom
 }
 
 // Send a message to the current chatroom
@@ -54,6 +57,7 @@ function sendMessage() {
   const message = document.getElementById("messageInput").value.trim();
   if (!message) return;
 
+  // Push the message into Firebase Realtime Database
   const messageRef = firebase.database().ref("rooms/" + chatroomId + "/messages").push();
   messageRef.set({
     sender: window.myCode,
@@ -61,7 +65,7 @@ function sendMessage() {
     timestamp: Date.now()
   });
 
-  document.getElementById("messageInput").value = "";
+  document.getElementById("messageInput").value = ""; // Clear input after sending
 }
 
 // Listen for new messages in the current chatroom
@@ -75,6 +79,6 @@ function listenForMessages() {
     const msg = document.createElement("p");
     msg.innerHTML = `<strong>${data.sender}:</strong> ${data.text}`;
     messagesDiv.appendChild(msg);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
   });
 }
